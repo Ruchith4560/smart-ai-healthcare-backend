@@ -1,18 +1,26 @@
+from datetime import datetime, timedelta
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from .database import get_db
+from .models import User
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    return pwd_context.hash(password[:72])
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
     return pwd_context.verify(plain_password[:72], hashed_password)
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
 
-SECRET_KEY = "mysecretkey"  # later we move to .env
+
+SECRET_KEY = "mysecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -22,19 +30,16 @@ def create_access_token(data: dict):
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-from fastapi import Depends, HTTPException
 
-from sqlalchemy.orm import Session
-from .database import get_db
-from .models import User
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    token = credentials.credentials   # VERY IMPORTANT LINE
+    token = credentials.credentials
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -54,9 +59,6 @@ def get_current_user(
     return user
 
 
-        
-from fastapi import HTTPException
-
 def require_role(required_role: str):
     def role_checker(user: User = Depends(get_current_user)):
         if user.role != required_role:
@@ -65,4 +67,5 @@ def require_role(required_role: str):
                 detail=f"Access forbidden: {required_role} role required"
             )
         return user
+
     return role_checker

@@ -1,10 +1,17 @@
 from pydantic import BaseModel
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+
 
 class AppointmentCreate(BaseModel):
     doctor_id: int
-    problem: str
+    problem: Optional[str] = None
+
+
+class AppointmentBook(BaseModel):
+    doctor_id: int
+    appointment_time: datetime
+
 
 class UserCreate(BaseModel):
     name: str
@@ -13,6 +20,24 @@ class UserCreate(BaseModel):
     role: str = "patient"
     specialization: Optional[str] = None
 
+
 class UserLogin(BaseModel):
     email: str
     password: str
+
+
+class SymptomRequest(BaseModel):
+    symptoms: List[str]
+
+
+
+
+class DiagnosisUpdate(BaseModel):
+    diagnosis: str
+    notes: str
+    prescription: Optional[str] = None
+
+
+class AppointmentCreate(BaseModel):
+    doctor_id: int
+    appointment_time: datetime

@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from .database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -9,22 +11,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String, nullable=False)
     role = Column(String, default="patient")
-    specialization = Column(String, nullable=True)     
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
+    specialization = Column(String, nullable=True)
 
-class Appointment(Base):
-    __tablename__ = "appointments"
-
-    id = Column(Integer, primary_key=True, index=True)
-    patient_id = Column(Integer, ForeignKey("users.id"))
-    doctor_id = Column(Integer, ForeignKey("users.id"))
-    problem = Column(String)
-
-    patient = relationship("User", foreign_keys=[patient_id])
-    doctor = relationship("User", foreign_keys=[doctor_id])
-    from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
 
 class SymptomHistory(Base):
     __tablename__ = "symptom_history"
@@ -33,5 +21,21 @@ class SymptomHistory(Base):
     patient_id = Column(Integer, ForeignKey("users.id"))
     symptoms = Column(String)
     predicted_specialization = Column(String)
+    diagnosis = Column(String, nullable=True)
+    prescription = Column(String, nullable=True)
 
     patient = relationship("User")
+from sqlalchemy import DateTime
+from datetime import datetime
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("users.id"))
+    doctor_id = Column(Integer, ForeignKey("users.id"))
+    appointment_time = Column(DateTime, nullable=False)
+    status = Column(String, default="booked")
+
+    patient = relationship("User", foreign_keys=[patient_id])
+    doctor = relationship("User", foreign_keys=[doctor_id])
