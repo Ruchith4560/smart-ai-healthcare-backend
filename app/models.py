@@ -52,3 +52,15 @@ class DoctorAvailability(Base):
     is_booked = Column(String, default="no")
 
     doctor = relationship("User")
+
+
+class ChatHistory(Base):
+    __tablename__ = "chat_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String)
+    bot_reply = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    patient = relationship("User")

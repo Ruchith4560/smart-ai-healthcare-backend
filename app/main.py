@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from .database import engine, get_db
 from .models import (
     Base,
+    ChatHistory,
     User,
     Appointment,
     DoctorAvailability,
@@ -364,3 +365,61 @@ def complete_appointment(
     db.refresh(appointment)
 
     return {"message": "Appointment marked as completed"}
+from .schemas import ChatRequest
+from .ai_engine import medical_chatbot_response
+@app.post("/ai/chat")
+def ai_chat(
+    data: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("patient"))
+):
+    reply, specialization = medical_chatbot_response(data.message)
+
+    # Save chat history
+    chat = ChatHistory(
+        patient_id=current_user.id,
+        message=data.message,
+        bot_reply=reply
+    )
+
+    db.add(chat)
+    db.commit()
+    db.refresh(chat)
+
+    doctors = []
+    if specialization:
+        doctors = db.query(User).filter(
+            User.role == "doctor",
+            User.specialization.ilike(specialization)
+        ).all()
+
+    return {
+        "user_message": data.message,
+        "bot_reply": reply,
+        "recommended_specialization": specialization,
+        "available_doctors": [
+            {
+                "id": doc.id,
+                "name": doc.name,
+                "specialization": doc.specialization
+            }
+            for doc in doctors
+        ]
+    }
+@app.get("/ai/chat/history")
+def get_chat_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("patient"))
+):
+    chats = db.query(ChatHistory).filter(
+        ChatHistory.patient_id == current_user.id
+    ).all()
+
+    return [
+        {
+            "message": chat.message,
+            "reply": chat.bot_reply,
+            "time": chat.created_at
+        }
+        for chat in chats
+    ]

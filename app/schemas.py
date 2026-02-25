@@ -46,3 +46,10 @@ class AvailabilityCreate(BaseModel):
 
 class AppointmentComplete(BaseModel):
     notes: Optional[str] = None 
+    
+
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    reply: str
